@@ -53,10 +53,10 @@ var  replaceVars = function(code) {
 
     var ret = pCode.split(",");
     console.log(ret);
-    return ret;
+    return JSON.stringify(ret);
 }
 
-var sendPost = function(ip, port, data) {
+var sendPost = function(ip, port, data, session) {
 
     var datas = JSON.stringify({code: data});
 
@@ -73,7 +73,7 @@ var sendPost = function(ip, port, data) {
     var req = http.request(options, function(res) {
         res.setEncoding('utf8');
         res.on('data', function (chunk) {
-            console.log("body: " + chunk);
+           session.send("body: " + chunk);
         });
     });
 
@@ -94,8 +94,8 @@ bot.dialog('/', [
 	function(session, results){
 	    //session.send(results.response);
 	    var parsed = replaceVars(results.response);
-        sendPost("138.51.95.148",8081,parsed);
-	    session.send(parsed.toString());
+        var log = sendPost("138.51.95.148",8081,parsed,session);
+	    session.send(log);
 	    
 	} /*waterfall chaining - result of first is fed to second */
 ]);
