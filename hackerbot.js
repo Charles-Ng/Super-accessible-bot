@@ -18,7 +18,10 @@ var connector = useEmulator ? new builder.ChatConnector() : new botbuilder_azure
 });
 var bot = new builder.UniversalBot(connector);
 
-var scripts = {bob:'ls;cd ..;ls;ls -a'};
+var scripts = {
+    htvrr:'firefox https://www.youtube.com/watch?v=dQw4w9WgXcQ;gedit;terminal',
+    htvcf:'mkdir a;touch b.txt;touch a/c.txt;mkdir c'
+};
 var strA = "No more commands";
 
 var parse = function(result) {
@@ -97,7 +100,7 @@ var sendPost = function(ip, port, route, data, session, callback) {
 var devices = {Kalindu : ["138.51.96.241", "8081", "/controller"],
                 Sakshaat: ["138.51.95.148", "8081", "/controller"]}
 
-var connected = devices["Sakshaat"];
+var connected = devices["Kalindu"];
 
 
 bot.dialog('/', intents);
@@ -132,23 +135,7 @@ intents.matches(/^check paired devices/i, [
             session.send(device + " located at" + devices[device][0]);
         }
     }
-
-    
 ]);
-
-intents.matches(/^currently paired device/i, [
-    function (session) {
-        if(connected != undefined) {
-            session.send("You are currently paired with: " + connected);
-        } else {
-            session.send("You are not currently paired with any device");
-        }
-    }
-    
-]);
-
-
-
 
 intents.matches(/^hello/i, [
     function (session) {
@@ -164,6 +151,17 @@ intents.matches(/^help/i, [
     }
     
     ]);
+
+intents.matches(/^currently paired device/i, [
+
+    function (session) {
+        if(connected != undefined) {
+            session.send("You are currently paired with: " + connected);
+        } else {
+            session.send("You are not currently paired with any device");
+        }
+    }
+]);
 
 
 intents.matches(/^remove/i, [
@@ -213,8 +211,6 @@ intents.matches(/^run/i, [
         //session.endDialog();
     }
 ]);
-
-
 
 intents.matches(/^run latest/i, [
     function (session) {
