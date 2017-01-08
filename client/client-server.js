@@ -55,10 +55,8 @@ app.post('/controller', function(req, res) {
 	    	res.send(data);
     	});
     }, 500);
-
-
-
 });
+
 
 // Just a 404 page because whatever
 app.get('*', function(req, res) {
