@@ -11,18 +11,15 @@ def csplit(string):
         del stack[0];
     return stack
 
+import re
+
 def lsplit(block):
     delimiter = "\n"
     
-    block.split(delimiter)
+    re.split(delimiter,block)
 
     return block
 
-"""
-//test
 string = input("enter:");
-string = lsplit(string)
-print(string)
-print(csplit(string[0]))
-del string[0];
-"""
+
+print(lsplit(string))
