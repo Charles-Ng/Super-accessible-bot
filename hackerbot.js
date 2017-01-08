@@ -132,7 +132,23 @@ intents.matches(/^check paired devices/i, [
             session.send(device + " located at" + devices[device][0]);
         }
     }
+
+    
 ]);
+
+intents.matches(/^currently paired device/i, [
+    function (session) {
+        if(connected != undefined) {
+            session.send("You are currently paired with: " + connected);
+        } else {
+            session.send("You are not currently paired with any device");
+        }
+    }
+    
+]);
+
+
+
 
 intents.matches(/^hello/i, [
     function (session) {
@@ -148,17 +164,6 @@ intents.matches(/^help/i, [
     }
     
     ]);
-
-intents.matches(/^currently paired device/i, [
-
-    function (session) {
-        if(connected != undefined) {
-            session.send("You are currently paired with: " + connected);
-        } else {
-            session.send("You are not currently paired with any device");
-        }
-    }
-]);
 
 
 intents.matches(/^remove/i, [
@@ -208,6 +213,8 @@ intents.matches(/^run/i, [
         //session.endDialog();
     }
 ]);
+
+
 
 intents.matches(/^run latest/i, [
     function (session) {

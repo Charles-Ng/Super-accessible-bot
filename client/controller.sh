@@ -14,12 +14,12 @@ if [ "$#" -eq 2 ]; then
         else 
             $line
             if [ "$?" == 0 ] ; then
-                echo "Command executed." 1>> $2 
+                echo "Finished executing command:" "$line" 1>> $2 
             else
-                echo "Command could not be executed." 1>> $2 
+                echo "Did not finish executing command:" "$line" 1>> $2 
             fi
         fi
-        echo "--------------------" 1>> $2
+        echo " " 1>> $2
     done <$1
 else
     echo "Incorrect Usage"
