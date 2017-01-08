@@ -17,6 +17,7 @@
   },
   "homepage": "https://github.com/Charles-Ng/Super-accessible-bot#readme",
   "dependencies": {
+    "body-parser": "^1.15.2",
     "botbuilder": "^3.5.1",
     "botbuilder-azure": "^3.0.1",
     "express": "^4.14.0"

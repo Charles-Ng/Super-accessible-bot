@@ -2,12 +2,16 @@
 var cp = require("child_process");
 var express = require('express');
 var fs = require('fs');
+var bodyParser = require('body-parser');
 
 // the application handler
 var app = express();
 var port = 8081;
 
-var fail = false;
+// Required to properly parse post requests
+app.use(bodyParser.json());
+app.use(bodyParser.urlencoded({ extended: true }));
+
 
 // redirects all the traffic to the main page to the login page
 app.get('/', function (req, res) {
