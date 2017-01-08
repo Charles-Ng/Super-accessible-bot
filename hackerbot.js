@@ -16,11 +16,117 @@ var connector = useEmulator ? new builder.ChatConnector() : new botbuilder_azure
 });
 var bot = new builder.UniversalBot(connector);
 
-var commands = [];
-var scripts = [];
+var scripts = {};
 var strA = "No more commands";
 
+var parse = function(result) {
+    
+    var sp = result.split(";");
+    // var ret = [];
+	// for (var i = 0; i < sp.length; i++){
+    //     ret.push(sp[i]);
+	// }
+
+	return sp;
+}
+
+var  replaceVars = function(code) {
+    var parsed = parse(code);
+    var def = parsed[0];
+    var vars = def.split(" ");
+    if (vars[0] == "def") {
+        vars.splice(0, 1);
+        vars = vars[0].split(",");
+        console.log(vars.toString());
+        parsed.splice(0,1);
+    } else {
+        console.log(parsed);
+        return parsed;
+    }
+
+    var pCode = parsed.toString();
+    for (var i = 0; i < vars.length; i++) {
+        console.log(vars[i].toString());
+        pCode = pCode.replace("{"+i.toString()+"}", vars[i]);
+    }
+
+    var ret = pCode.split(",");
+    console.log(ret);
+    return ret;
+}
+
+var sendPost = function(ip, port, route, data) {
+
+    var datas = JSON.stringify({code: data});
+    var toReturn  = "";
+
+    var options = {
+        host: ip,
+        port: port,
+        path: route,
+        method: 'POST',
+        headers : {
+            'Content-Type' : 'application/json'
+        }
+    };
+
+    var req = http.request(options, function(res) {
+        res.setEncoding('utf8');
+        res.on('data', function (chunk) {
+            toReturn = "body: " + chunk;
+        });
+    });
+
+    req.write(datas);
+    req.end();
+
+    // var req = new XMLHttpRequest();
+    // req.open('POST', 'http://'+ip+':'+port.toString()+'/controller');
+    // req.setRequestHeader("Content-Type", "application/json;charset=UTF-8");
+    // var obj = {hello:'world'};
+    // req.send(JSON.stringify(obj));
+    return toReturn;
+}
+
+var devices = {Kalindu : ["138.51.96.241", "8081", "/controller"],
+                Sakshaat: ["138.51.95.148", "8081", "/controller"]}
+
+var connected = devices["Kalindu"];
+
+
 bot.dialog('/', intents);
+
+intents.matches(/^choose current device/i, [
+    function(session) {
+        builder.Prompts.choice(session, "Which device would you like to work with?", devices);   
+    },
+    function(session, results) {
+        if(results.response) {
+            var choice = results.response.entity;
+
+            if (results.response.entity in devices) {
+                connected = devices[results.response.entity];
+                session.send("The device is now active.");
+            } else {
+                session.send("Alright, that's ok.");
+            }
+
+            session.endDialog();
+            
+        }
+    } 
+
+
+]);
+
+intents.matches(/^check paired devices/i, [
+    function (session) {
+        session.send("Here are your currently connected devices:");
+        for (var device in devices) {
+            session.send(device + " located at" + devices[device][0]);
+        }
+    }
+]);
 
 intents.matches(/^hello/i, [
     function (session) {
@@ -47,14 +153,50 @@ intents.matches(/^check connected devices/i, [
 
 intents.matches(/^remove/i, [
     function (session) {
-        commands.pop();
-        session.send("Your script has been updated");
-        
-        
+        builder.Prompts.choice(session, "Which script would you like to delete?", scripts);   
+           
     },
-    //function (session, results) {
-     //   session.send('Ok... Changed your script name to %s', session.userData.name);
-    //}
+    function (session, results) {
+
+        if(results.response) {
+            var choice = results.response.entity;
+            session.endDialog();
+            if (results.response.entity in scripts) {
+                delete scripts[results.response.entity];
+                session.send("Your script has been updated");
+            } else {
+                session.send("Alright, that's ok.");
+                
+            }
+            
+        }
+
+    }
+]);
+
+intents.matches('/^run/i', [
+    function (session) {
+        builder.Prompts.choice(session, "Which script would you like to run?", scripts);   
+           
+    },
+    function (session, results) {
+
+        if(results.response) {
+            var choice = results.response.entity;
+            session.endDialog();
+            if (results.response.entity in scripts) {
+                var parsed = replaceVars(scripts[results.response.entity]);
+                var log = sendPost(connected[0], connected[1], connected[2], parsed);
+                session.send("Your script has been run, here is the log");
+                session.send(log);
+            } else {
+                session.send("Alright, that's ok.");
+                
+            }
+            
+        }
+
+    }
 ]);
 
 intents.matches(/^run latest/i, [
@@ -75,7 +217,7 @@ intents.matches(/^make new/i, [
         session.beginDialog('/commandprompt');
         
         
-    },
+    }
     
 ]);
 
@@ -84,27 +226,13 @@ intents.onDefault([
         session.send("I am here to help");
     }
 ]);    
-intents.matches(/^list current commands/i, [
-    function (session) {
-        session.send("%s", commands.toString());
-        
-        
-        
-        
-    },
-    //function (session, results) {
-     //   session.send('Ok... Changed your script name to %s', session.userData.name);
-    //}
-]);
+
 intents.matches(/^list current scripts/i, [
 
     function (session) {
-        if(scripts.length != 0){
-            for(var i = 0; i < scripts.length; i++){
-                session.send("%i %s", i+1,scripts[i]);
-            }
-        }else{
-            session.send("Command list is empty. Type \'make new\' to add commands.")
+        session.send("Here you go.");
+        for (var key in scripts) {
+            session.send(key+"  \n  "+scripts[key]);
         }
     }
     //function (session, results) {
@@ -112,27 +240,32 @@ intents.matches(/^list current scripts/i, [
     //}
 
 ]);
-bot.dialog('/badcommand', [
+bot.dialog('/saveScript', [
     function(session){
-        //builder.Prompts.text(session, ' What\'s the name of the Command you would like to add today?');
-        session.send('Hello!');
+        builder.Prompts.text(session, ' What\'s the name of the Command you would like to add today?');
+        
+        //session.send('Hello!');
+        //session.endDialog();
+     },
+    function(session, results){
+        
+        session.userData.cname = results.response;
+        builder.Prompts.text(session, ' Pass me the script so I can link them up ');
+    },
+    function(session, results){
+        console.log("LOGGGG");
+        scripts[session.userData.cname] = results.response;
+        session.send("Success!");
         session.endDialog();
-     }
-    // function(session, results){
         
-    //     session.userData.cmon = results.response;
-      
-    //     commands.push(results.response);
-    //     session.send('Your command name "%s" has been saved.', session.userData.cmon);
-    //     session.endDialog();
-    //     session.beginDialog('/makescript')
-        
-        
-    // }
+    }
+
+    
 ]);
 
 bot.dialog('/commandprompt', [
     function(session) {
+        console.log("Prompt");
         builder.Prompts.choice(session, "Would you like to make a script?", ["Yes", "No"]);   
     },
     function(session, results) {
@@ -140,7 +273,7 @@ bot.dialog('/commandprompt', [
             var choice = results.response.entity;
             session.endDialog();
             if (choice == "Yes") {
-                session.beginDialog('/badcommand');
+                session.beginDialog('/saveScript');
             } else {
                 session.send("Alright, that's ok.");
                 
@@ -152,24 +285,6 @@ bot.dialog('/commandprompt', [
 
     ]
 );
-
-bot.dialog('/makescript', [
-    function(session){
-        builder.Prompts.text(session, ' Pass me the script so I can link them up ');
-        //session.send('What would you like the new name to be?');
-    },
-    function(session, results){
-        
-        session.userData.script = results.response;
-      
-        scripts.push(results.response);
-        session.send('Your script "%s" has been linked up.', session.userData.script);
-        
-        session.endDialog();
-        
-    }
-]);
-
 
 
 if (useEmulator) {
