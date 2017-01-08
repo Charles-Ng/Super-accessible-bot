@@ -19,7 +19,7 @@ if [ "$#" -eq 2 ]; then
                 echo "Command could not be executed." 1>> $2 
             fi
         fi
-        echo "--------------------" 1>> $2
+        echo " " 1>> $2
     done <$1
 else
     echo "Incorrect Usage"

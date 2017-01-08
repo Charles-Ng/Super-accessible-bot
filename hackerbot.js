@@ -22,6 +22,56 @@ var strA = "No more commands";
 
 bot.dialog('/', intents);
 
+var devices = {Kalindu : ["138.51.96.241", "8081", "/controller"],
+                Sakshaat: ["138.51.95.148", "8081", "/controller"]}
+
+var connected = devices["Kalindu"];
+
+intents.matches(/^choose current device/i, [
+    function(session) {
+        builder.Prompts.choice(session, "Which device would you like to work with?", devices);   
+    },
+    function(session, results) {
+        if(results.response) {
+            var choice = results.response.entity;
+
+            if (results.response.entity in devices) {
+                connected = devices[results.response.entity];
+                session.send("The device is now active.");
+            } else {
+                session.send("Alright, that's ok.");
+            }
+
+            session.endDialog();
+            
+        }
+    } 
+
+]);
+
+intents.matches(/^check paired devices/i, [
+    function (session) {
+        session.send("Here are your currently connected devices:");
+        for (var device in devices) {
+            session.send(device + " located at" + devices[device][0]);
+        }
+    }
+    
+]);
+
+intents.matches(/^currently paired device/i, [
+    function (session) {
+        if(connected != undefined) {
+            session.send("You are currently paired with: " + connected);
+        } else {
+            session.send("You are not currently paired with any device");
+        }
+    }
+    
+]);
+
+
+
 intents.matches(/^hello/i, [
     function (session) {
         
@@ -37,12 +87,6 @@ intents.matches(/^help/i, [
     
     ]);
 
-intents.matches(/^check connected devices/i, [
-    function (session) {
-        session.send("Here are your currently connected devices: 19.2.186.1.2, 11.4552.3312");        
-    }
-    
-]);
 
 
 intents.matches(/^remove/i, [
@@ -56,6 +100,8 @@ intents.matches(/^remove/i, [
      //   session.send('Ok... Changed your script name to %s', session.userData.name);
     //}
 ]);
+
+
 
 intents.matches(/^run latest/i, [
     function (session) {
