@@ -11,15 +11,21 @@ def csplit(string):
         del stack[0];
     return stack
 
-import re
-
 def lsplit(block):
-    delimiter = "\n"
+    delimiter = ";"
     
-    re.split(delimiter,block)
-
-    return block
+    stack = [block]
+    
+    pieces = []
+    for substr in stack:
+        pieces.extend(substr.split(delimiter))
+    stack = pieces
+    
+    del stack[-1];
+    
+    return stack
 
 string = input("enter:");
-
-print(lsplit(string))
+string = lsplit(string);
+print(string)
+print(csplit(string[0]))
