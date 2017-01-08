@@ -22,6 +22,29 @@ var strA = "No more commands";
 
 bot.dialog('/', intents);
 
+intents.matches(/^hello/i, [
+    function (session) {
+        
+        session.send("Hello I am here to assists you on running scripts from different computers");        
+    }
+  
+]);
+
+intents.matches(/^help/i, [
+    function (session) {
+        session.send("Please consult the experts");        
+    }
+    
+    ]);
+
+intents.matches(/^check connected devices/i, [
+    function (session) {
+        session.send("Here are your currently connected devices: 19.2.186.1.2, 11.4552.3312");        
+    }
+    
+]);
+
+
 intents.matches(/^remove/i, [
     function (session) {
         commands.pop();
@@ -74,22 +97,39 @@ intents.matches(/^list current commands/i, [
      //   session.send('Ok... Changed your script name to %s', session.userData.name);
     //}
 ]);
+intents.matches(/^list current scripts/i, [
+
+    function (session) {
+        if(scripts.length != 0){
+            for(var i = 0; i < scripts.length; i++){
+                session.send("%i %s", i+1,scripts[i]);
+            }
+        }else{
+            session.send("Command list is empty. Type \'make new\' to add commands.")
+        }
+    }
+    //function (session, results) {
+     //   session.send('Ok... Changed your script name to %s', session.userData.name);
+    //}
+
+]);
 bot.dialog('/badcommand', [
     function(session){
-        builder.Prompts.text(session, ' What\'s the name of the Command you would like to add today?');
-        //session.send('What would you like the new name to be?');
-    },
-    function(session, results){
-        
-        session.userData.cmon = results.response;
-      
-        commands.push(results.response);
-        session.send('Your command name "%s" has been saved.', session.userData.cmon);
+        //builder.Prompts.text(session, ' What\'s the name of the Command you would like to add today?');
+        session.send('Hello!');
         session.endDialog();
-        session.beginDialog('/makescript')
+     }
+    // function(session, results){
+        
+    //     session.userData.cmon = results.response;
+      
+    //     commands.push(results.response);
+    //     session.send('Your command name "%s" has been saved.', session.userData.cmon);
+    //     session.endDialog();
+    //     session.beginDialog('/makescript')
         
         
-    }
+    // }
 ]);
 
 bot.dialog('/makescript', [
