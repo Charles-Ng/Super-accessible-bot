@@ -46,10 +46,10 @@ intents.matches(/^run latest/i, [
     //}
 ]);
 
-intents.matches(/^make new^/i, [
+intents.matches(/^make new/i, [
      function (session) {
         
-        session.beginDialog('/badcommand');
+        session.beginDialog('/commandprompt');
         
         
     },
@@ -59,7 +59,6 @@ intents.matches(/^make new^/i, [
 intents.onDefault([
     function (session) {
         session.send("I am here to help");
-        session.beginDialog('/badcommand');
     }
 ]);    
 intents.matches(/^list current commands/i, [
@@ -91,6 +90,28 @@ bot.dialog('/badcommand', [
         
     }
 ]);
+
+bot.dialog('/commandprompt', [
+    function(session) {
+        builder.Prompts.choice(session, "Would you like to make a script?", ["Yes", "No"]);   
+    },
+    function(session, results) {
+        if(results.response) {
+            var choice = results.response.entity;
+            session.endDialog();
+            if (choice == "Yes") {
+                session.beginDialog('/badcommand');
+            } else {
+                session.send("Alright, that's ok.");
+                
+            }
+            
+        }
+    } 
+
+
+    ]
+);
 
 bot.dialog('/makescript', [
     function(session){
