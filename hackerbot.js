@@ -18,7 +18,7 @@ var connector = useEmulator ? new builder.ChatConnector() : new botbuilder_azure
 });
 var bot = new builder.UniversalBot(connector);
 
-var scripts = {bob:'ls;touch bob;echo "hello" > bob;ls;cat bob'};
+var scripts = {bob:'ls;cd ..;ls;ls -a'};
 var strA = "No more commands";
 
 var parse = function(result) {
@@ -58,17 +58,8 @@ var  replaceVars = function(code) {
 }
 
 var execCallback = function(log, session) {
-    var lines = log.replace(/#/g, "").split(" ");
-    var res = "";
-    for (var i = 0; i < lines.length; i++) {
-        
-        if ("Command" in lines[i]) {
-            res += "------------------------------"
-            res += lines[i];
-            res += "------------------------------"
-        }
-    }
-    session.send(res);
+    session.send(log);
+    
 }
 
 var sendPost = function(ip, port, route, data, session, callback) {
@@ -214,7 +205,7 @@ intents.matches(/^run/i, [
             
 
         }
-        session.endDialog();
+        //session.endDialog();
     }
 ]);
 
