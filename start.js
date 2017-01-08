@@ -1,26 +1,24 @@
-/*-----------------------------------------------------------------------------
-This template demonstrates how to use Waterfalls to collect input from a user using a sequence of steps.
-For a complete walkthrough of creating this type of bot see the article at
-https://docs.botframework.com/en-us/node/builder/chat/dialogs/#waterfall
------------------------------------------------------------------------------*/
-"use strict";
-var express = require('express');
+var express = require('express')
 var builder = require("botbuilder");
 var botbuilder_azure = require("botbuilder-azure");
 var querystring = require('querystring');
 var http = require('http');
-var useEmulator = (process.env.NODE_ENV == 'development');
-var intents = new builder.IntentDialog();
-var connector = useEmulator ? new builder.ChatConnector() : new botbuilder_azure.BotServiceConnector({
-    appId: process.env['MicrosoftAppId'],
-    appPassword: process.env['MicrosoftAppPassword'],
-    stateEndpoint: process.env['BotStateEndpoint'],
-    openIdMetadata: process.env['BotOpenIdMetadata']
-});
-var bot = new builder.UniversalBot(connector);
 
-var scripts = {};
-var strA = "No more commands";
+var app = express()
+
+// var connector = new builder.ConsoleConnector({
+//     appId: "7e6b091f-c19b-465a-8b18-776f84abee34",
+//     appPassword: "y5xCerUc8KdoMP8qHP5htB8"
+// });
+
+var connector = new builder.ConsoleConnector({
+
+     appId: "7e6b091f-c19b-465a-8b18-776f84abee34",
+     appPassword: "y5xCerUc8KdoMP8qHP5htB8"
+
+}).listen();
+
+var bot = new builder.UniversalBot(connector);
 
 var parse = function(result) {
     
@@ -55,18 +53,17 @@ var  replaceVars = function(code) {
 
     var ret = pCode.split(",");
     console.log(ret);
-    return ret;
+    return JSON.stringify(ret);
 }
 
-var sendPost = function(ip, port, route, data) {
+var sendPost = function(ip, port, data, session) {
 
     var datas = JSON.stringify({code: data});
-    var toReturn  = "";
 
     var options = {
         host: ip,
         port: port,
-        path: route,
+        path: '/controller',
         method: 'POST',
         headers : {
             'Content-Type' : 'application/json'
@@ -76,7 +73,7 @@ var sendPost = function(ip, port, route, data) {
     var req = http.request(options, function(res) {
         res.setEncoding('utf8');
         res.on('data', function (chunk) {
-            toReturn = "body: " + chunk;
+           session.send("body: " + chunk);
         });
     });
 
@@ -88,229 +85,35 @@ var sendPost = function(ip, port, route, data) {
     // req.setRequestHeader("Content-Type", "application/json;charset=UTF-8");
     // var obj = {hello:'world'};
     // req.send(JSON.stringify(obj));
-    return toReturn;
 }
 
-var devices = {Kalindu : ["138.51.96.241", "8081", "/controller"],
-                Sakshaat: ["138.51.95.148", "8081", "/controller"]}
-
-var connected = devices["Sakshaat"];
-
-
-bot.dialog('/', intents);
-
-intents.matches(/^choose current device/i, [
-    function(session) {
-        builder.Prompts.choice(session, "Which device would you like to work with?", devices);   
-    },
-    function(session, results) {
-        if(results.response) {
-            var choice = results.response.entity;
-
-            if (results.response.entity in devices) {
-                connected = devices[results.response.entity];
-                session.send("The device is now active.");
-            } else {
-                session.send("Alright, that's ok.");
-            }
-
-            session.endDialog();
-            
-        }
-    } 
-
-
+bot.dialog('/', [
+	function(session, args, next){
+		builder.Prompts.text(session, "Enter input!");
+	},
+	function(session, results){
+	    //session.send(results.response);
+	    var parsed = replaceVars(results.response);
+        var log = sendPost("138.51.95.148",8081,parsed,session);
+	    session.send(log);
+	    
+	} /*waterfall chaining - result of first is fed to second */
 ]);
 
-intents.matches(/^check paired devices/i, [
-    function (session) {
-        session.send("Here are your currently connected devices:");
-        for (var device in devices) {
-            session.send(device + " located at " + devices[device][0]);
-        }
-    }
-]);
+app.get('/', function (req, res) {
+    res.send('Hello World!')
+})
 
-intents.matches(/^hello/i, [
-    function (session) {
-        
-        session.send("Hello I am here to assists you on running scripts from different computers");        
-    }
-  
-]);
+app.get('/a', function(req, res) {
+    res.send('HIIIIII!!!!')
+})
 
-intents.matches(/^help/i, [
-    function (session) {
-        session.send("Please consult the experts");        
-    }
-    
-    ]);
-
-intents.matches(/^currently paired device/i, [
-
-    function (session) {
-
-        if(connected != undefined) {
-
-            session.send("You are currently paired with: " + connected);
-
-        } else {
-
-            session.send("You are not currently paired with any device");
-
-        }
-
-    }
-
-    
-
-]);
+app.listen(8081, function () {
+    console.log('App listening on port 8081!')
+})
 
 
-intents.matches(/^remove/i, [
-    function (session) {
-        builder.Prompts.choice(session, "Which script would you like to delete?", scripts);   
-           
-    },
-    function (session, results) {
+//1346087762122533
+//2f71d969e9ed55bb7c8af4b163b3c943
+//EAATIQnrl1yUBAHKUSVkkUIu55LGSxb4Hq5mapOkci7PZAiqlG4hAxSTe8fZBZBa7tE2lfaxk5tCHHZCpqyVPt9MdJqgAXcxl7PUfDquxndNRMKqACTx5ruNoAhPO5cSaBboFjKQsdR1TUhKgt5dDD5ZCo5OLIk3Jil90mVg4zhwZDZD
 
-        if(results.response) {
-            var choice = results.response.entity;
-            session.endDialog();
-            if (results.response.entity in scripts) {
-                delete scripts[results.response.entity];
-                session.send("Your script has been updated");
-            } else {
-                session.send("Alright, that's ok.");
-                
-            }
-            
-        }
-
-    }
-]);
-
-intents.matches(/^run/i, [
-    function (session) {
-        builder.Prompts.choice(session, "Which script would you like to run?", scripts);   
-           
-    },
-    function (session, results) {
-
-        if(results.response) {
-            var choice = results.response.entity;
-            
-            if (results.response.entity in scripts) {
-                var parsed = replaceVars(scripts[results.response.entity]);
-                session.send(parsed);
-                var log = sendPost(connected[0], connected[1], connected[2], parsed);
-                session.send("Your script has been run, here is the log");
-                session.send(log);
-            } else {
-                session.send("Alright, that's ok.");
-                
-            }
-            session.endDialog();
-        }
-
-    }
-]);
-
-intents.matches(/^run latest/i, [
-    function (session) {
-        
-        session.send("Your script is now running");
-        
-        
-    },
-    //function (session, results) {
-     //   session.send('Ok... Changed your script name to %s', session.userData.name);
-    //}
-]);
-
-intents.matches(/^make new/i, [
-     function (session) {
-        
-        session.beginDialog('/commandprompt');
-        
-        
-    }
-    
-]);
-
-intents.onDefault([
-    function (session) {
-        session.send("I am here to help");
-    }
-]);    
-
-intents.matches(/^list current scripts/i, [
-
-    function (session) {
-        session.send("Here you go.");
-        for (var key in scripts) {
-            session.send(key+"  \n  "+scripts[key]);
-        }
-    }
-    //function (session, results) {
-     //   session.send('Ok... Changed your script name to %s', session.userData.name);
-    //}
-
-]);
-bot.dialog('/saveScript', [
-    function(session){
-        builder.Prompts.text(session, ' What\'s the name of the Command you would like to add today?');
-        
-        //session.send('Hello!');
-        //session.endDialog();
-     },
-    function(session, results){
-        
-        session.userData.cname = results.response;
-        builder.Prompts.text(session, ' Pass me the script so I can link them up ');
-    },
-    function(session, results){
-        console.log("LOGGGG");
-        scripts[session.userData.cname] = results.response;
-        session.send("Success!");
-        session.endDialog();
-        
-    }
-
-    
-]);
-
-bot.dialog('/commandprompt', [
-    function(session) {
-        console.log("Prompt");
-        builder.Prompts.choice(session, "Would you like to make a script?", ["Yes", "No"]);   
-    },
-    function(session, results) {
-        if(results.response) {
-            var choice = results.response.entity;
-            session.endDialog();
-            if (choice == "Yes") {
-                session.beginDialog('/saveScript');
-            } else {
-                session.send("Alright, that's ok.");
-                
-            }
-            
-        }
-    } 
-
-
-    ]
-);
-
-
-if (useEmulator) {
-    var restify = require('restify');
-    var server = restify.createServer();
-    server.listen(3978, function() {
-        console.log('test bot endpont at http://localhost:3978/api/messages');
-    });
-    server.post('/api/messages', connector.listen());    
-} else {
-    module.exports = { default: connector.listen() }
-}

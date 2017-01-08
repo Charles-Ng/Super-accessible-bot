@@ -6,6 +6,8 @@ https://docs.botframework.com/en-us/node/builder/chat/dialogs/#waterfall
 "use strict";
 var builder = require("botbuilder");
 var botbuilder_azure = require("botbuilder-azure");
+var querystring = require('querystring');
+var http = require('http');
 var useEmulator = (process.env.NODE_ENV == 'development');
 var intents = new builder.IntentDialog();
 var connector = useEmulator ? new builder.ChatConnector() : new botbuilder_azure.BotServiceConnector({
@@ -16,7 +18,7 @@ var connector = useEmulator ? new builder.ChatConnector() : new botbuilder_azure
 });
 var bot = new builder.UniversalBot(connector);
 
-var scripts = {};
+var scripts = {bob:'ls;touch bob;echo "hello" > bob;ls;cat bob'};
 var strA = "No more commands";
 
 var parse = function(result) {
@@ -55,10 +57,23 @@ var  replaceVars = function(code) {
     return ret;
 }
 
-var sendPost = function(ip, port, route, data) {
+var execCallback = function(log, session) {
+    var lines = log.replace(/#/g, "").split(" ");
+    var res = "";
+    for (var i = 0; i < lines.length; i++) {
+        
+        if ("Command" in lines[i]) {
+            res += "------------------------------"
+            res += lines[i];
+            res += "------------------------------"
+        }
+    }
+    session.send(res);
+}
+
+var sendPost = function(ip, port, route, data, session, callback) {
 
     var datas = JSON.stringify({code: data});
-    var toReturn  = "";
 
     var options = {
         host: ip,
@@ -73,7 +88,8 @@ var sendPost = function(ip, port, route, data) {
     var req = http.request(options, function(res) {
         res.setEncoding('utf8');
         res.on('data', function (chunk) {
-            toReturn = "body: " + chunk;
+            var toReturn = chunk;
+            callback(toReturn, session);
         });
     });
 
@@ -85,13 +101,12 @@ var sendPost = function(ip, port, route, data) {
     // req.setRequestHeader("Content-Type", "application/json;charset=UTF-8");
     // var obj = {hello:'world'};
     // req.send(JSON.stringify(obj));
-    return toReturn;
 }
 
 var devices = {Kalindu : ["138.51.96.241", "8081", "/controller"],
                 Sakshaat: ["138.51.95.148", "8081", "/controller"]}
 
-var connected = devices["Kalindu"];
+var connected = devices["Sakshaat"];
 
 
 bot.dialog('/', intents);
@@ -143,11 +158,15 @@ intents.matches(/^help/i, [
     
     ]);
 
-intents.matches(/^check connected devices/i, [
+intents.matches(/^currently paired device/i, [
+
     function (session) {
-        session.send("Here are your currently connected devices: 19.2.186.1.2, 11.4552.3312");        
+        if(connected != undefined) {
+            session.send("You are currently paired with: " + connected);
+        } else {
+            session.send("You are not currently paired with any device");
+        }
     }
-    
 ]);
 
 
@@ -174,7 +193,7 @@ intents.matches(/^remove/i, [
     }
 ]);
 
-intents.matches('/^run/i', [
+intents.matches(/^run/i, [
     function (session) {
         builder.Prompts.choice(session, "Which script would you like to run?", scripts);   
            
@@ -183,10 +202,9 @@ intents.matches('/^run/i', [
 
         if(results.response) {
             var choice = results.response.entity;
-            session.endDialog();
             if (results.response.entity in scripts) {
                 var parsed = replaceVars(scripts[results.response.entity]);
-                var log = sendPost(connected[0], connected[1], connected[2], parsed);
+                var log = sendPost(connected[0], connected[1], connected[2], parsed, session, execCallback);
                 session.send("Your script has been run, here is the log");
                 session.send(log);
             } else {
@@ -194,8 +212,9 @@ intents.matches('/^run/i', [
                 
             }
             
-        }
 
+        }
+        session.endDialog();
     }
 ]);
 
